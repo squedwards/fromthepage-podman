@@ -1,5 +1,5 @@
-name: Build and Push Docker Image
 
+name: Build, Push & Deploy 
 on:
   release:
     types: [published]
@@ -8,52 +8,28 @@ on:
       - 'v*'
     branches:
       - 'main'
+      - 'use_workflow_template'
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+# Needed so GITHUB_TOKEN can publish to GHCR
+permissions:
+  contents: read
+  packages: write
 
+# env:
+  # CONTAINER_REPO as secret
+  # DOCKER_USERNAME as secret
+  # DOCKER_PAT as secret
+  
 jobs:
-  build-and-push:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v5
-
-      - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3
-        with:
-          platforms: all
-
-      - name: Docker meta
-        id: meta
-        uses: docker/metadata-action@v5
-        with:
-          images: |
-            ${{ secrets.CONTAINER_REPO }}
-          tags: |
-            type=ref,event=branch
-            type=semver,pattern={{version}}
-            type=semver,pattern={{major}}.{{minor}}
-            type=sha
-            # set latest tag for default branch
-            type=raw,value=latest,enable={{is_default_branch}}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PAT }}
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: Containerfile
-          push: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
+  build-push-dockerhub:
+    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-dockerhub.yml@master
+    secrets: inherit
+  
+#  deploy-awx:
+#    needs: build-push-dockerhub
+#    if: github.ref_name == 'develop'
+#    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/awx-deploy.yml@master
+#    with:
+#      image: ${{ needs.build-push-dockerhub.outputs.image }}
+#      image_tag: ${{ needs.build-push-dockerhub.outputs.branch_tag }}
+#    secrets: inherit
