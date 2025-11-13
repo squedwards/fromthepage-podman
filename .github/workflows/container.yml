@@ -22,7 +22,7 @@ permissions:
   
 jobs:
   build-push-dockerhub:
-    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-dockerhub.yml@master
+    uses: LeidenUniversityLibrary/container-deploy-awx-action/.github/workflows/build-push-dockerhub.yml@add_push_dockerhub # TODO: change to master
     secrets: inherit
   
 #  deploy-awx:
